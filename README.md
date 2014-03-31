@@ -1,6 +1,6 @@
 # googleauth
 
-**Create and load persistent Google authentication tokens for command-line apps**
+**Create and refresh a Google authentication token for command-line apps**
 
 [![NPM](https://nodei.co/npm/googleauth.png?mini=true)](https://nodei.co/npm/googleauth/)
 
@@ -22,7 +22,7 @@ Google Authorization Code: weeeeeeeeee
   refresh_token: 'bar' }
 ```
 
-Because the token is persisted, the next time you run it there will be no prompts:
+Because the refresh token is persisted, the next time you run it there will be no prompts, and a fresh google token will be requested from google every time:
 
 ```
 $ node awesome.js

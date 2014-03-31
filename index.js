@@ -45,6 +45,25 @@ function prompt (callback) {
   })
 }
 
+function checkAndUpdateToken(token, options, cb) {
+  refreshGoogleToken(token, options.client_id, options.client_secret, function (err, res, json) {
+    if (err) return cb(err);
+    if (json.error) return cb(new Error(res.statusCode + ': ' + json.error));
+    if (!json.access_token) {
+      console.log(json)
+      return cb(new Error(res.statusCode + ': refreshToken error'));
+    }
+    cb(null, json)
+  })
+}
+
+function save(configPath, data, callback) {
+  fs.writeFile(configPath, JSON.stringify(data), 'utf8', function (err) {
+    if (err) return callback(err)
+    callback(null, data)
+  })
+}
+
 function auth (options, callback) {
   var configPath = path.join(process.env.HOME || process.env.USERPROFILE, '.config', options.configName + '.json')
     , authData
@@ -60,8 +79,14 @@ function auth (options, callback) {
     authData = require(configPath)
   } catch (e) {}
   
-  if (authData && authData.access_token && authData.refresh_token)
+  if (authData && authData.access_token && authData.refresh_token) {
+    if (options.refresh) return checkAndUpdateToken(authData.refresh_token, options, function(err, updated) {
+      if (err) return callback(err)
+      updated.refresh_token = authData.refresh_token
+      save(configPath, updated, callback)
+    })
     return callback(null, authData)
+  }
 
   printAuthURL(options)
   
@@ -72,15 +97,52 @@ function auth (options, callback) {
     getToken(xtend(options, code), function (err, token) {
       if (err)
         return callback(err)
-
-      fs.writeFile(configPath, JSON.stringify(token), 'utf8', function (err) {
-        if (err)
-          return callback(err)
-
-        callback(null, token)
-      })
+      save(configPath, token, callback)
     })
   })
 }
 
+function refreshGoogleToken (refreshToken, clientId, clientSecret, cb) {
+  request.post('https://accounts.google.com/o/oauth2/token', {
+    form: {
+      refresh_token: refreshToken
+    , client_id: clientId
+    , client_secret: clientSecret
+    , grant_type: 'refresh_token'
+    }
+  , json: true
+  }, function (err, res, body) {
+    // `body` should look like:
+    // {
+    //   "access_token":"1/fFBGRNJru1FQd44AzqT3Zg",
+    //   "expires_in":3920,
+    //   "token_type":"Bearer",
+    // }
+    if (err) return cb(err, res, body);
+    if (parseInt(res.statusCode / 100, 10) !== 2) {
+      if (body.error) {
+        return cb(new Error(res.statusCode + ': ' + (body.error.message || body.error)), res, body);
+      }
+      if (!body.access_token) {
+        return cb(new Error(res.statusCode + ': refreshToken error'), res, body);
+      }
+      return cb(null, res, body);
+    }
+    cb(null, res, body);
+  });
+}
+
+function checkTokenValidity(accessToken, refreshToken, clientId, clientSecret, cb) {
+  request({
+    url: 'https://www.googleapis.com/oauth2/v1/userinfo'
+  , qs: {alt: 'json'}
+  , json: true
+  , headers: { Authorization: 'Bearer ' + accessToken }
+  }, function (err, res, json) {
+    if (err) return cb(err, res, json);
+    cb(null, !json.error)
+  });
+};
+
 module.exports = auth
+
