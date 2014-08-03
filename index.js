@@ -1,10 +1,55 @@
-var read = require('read')
-var path = require('path')
 var fs = require('fs')
+var path = require('path')
+var qs = require('querystring')
+
+var read = require('read')
 var mkdirp = require('mkdirp')
 var xtend = require('xtend')
 var request = require('request')
-var qs = require('querystring')
+
+module.exports = auth
+
+function auth (options, callback) {
+  var defaultPath = path.join(process.env.HOME || process.env.USERPROFILE, '.config', options.configName + '.json')
+  var configPath = options.config_path || defaultPath
+  var authData
+    
+  if (!options.client_id) return callback(new Error('client_id option is missing'))
+  if (!options.scope) return callback(new Error('scope is missing'))
+  
+  options.redirect_uri = options.redirect_uri || "urn:ietf:wg:oauth:2.0:oob"
+  
+  // multiple scopes should be space delimited
+  if (Array.isArray(options.scope)) options.scope = options.scope.join(' ')
+  
+  mkdirp.sync(path.dirname(configPath))
+  
+  try {
+    authData = require(configPath)
+  } catch (e) {}
+  
+  if (authData && authData.access_token && authData.refresh_token) {
+    if (options.refresh) return checkAndUpdateToken(authData.refresh_token, options, function(err, updated) {
+      if (err) return callback(err)
+      updated.refresh_token = authData.refresh_token
+      save(configPath, updated, callback)
+    })
+    return callback(null, authData)
+  }
+
+  printAuthURL(options)
+  
+  prompt(function (err, code) {
+    if (err)
+      return callback(err)
+    
+    getToken(xtend(options, code), function (err, token) {
+      if (err)
+        return callback(err)
+      save(configPath, token, callback)
+    })
+  })
+}
 
 function printAuthURL(options) {
   var authURL = "https://accounts.google.com/o/oauth2/auth?" +
@@ -12,7 +57,8 @@ function printAuthURL(options) {
     "redirect_uri=" + options.redirect_uri + "&" +
     "response_type=" + (options.response_type || "code") + "&" +
     "client_id=" + options.client_id
-  console.log("Open the following URL in your browser, then paste the resulting authorization code below:\n\n" + authURL + '\n\n')
+  var message = "Open the following URL in your browser, then paste the resulting authorization code below:"
+  console.log(message + "\n\n" + encodeURI(authURL) + '\n\n')
 }
 
 function getToken(options, cb) {
@@ -64,43 +110,7 @@ function save(configPath, data, callback) {
   })
 }
 
-function auth (options, callback) {
-  var configPath = path.join(process.env.HOME || process.env.USERPROFILE, '.config', options.configName + '.json')
-    , authData
-    
-  if (!options.client_id) return callback(new Error('client_id option is missing'))
-  
-  options.redirect_uri = options.redirect_uri || "urn:ietf:wg:oauth:2.0:oob"
-  options.scope = options.scope || "https://www.googleapis.com/auth/drive"
 
-  mkdirp.sync(path.dirname(configPath))
-
-  try {
-    authData = require(configPath)
-  } catch (e) {}
-  
-  if (authData && authData.access_token && authData.refresh_token) {
-    if (options.refresh) return checkAndUpdateToken(authData.refresh_token, options, function(err, updated) {
-      if (err) return callback(err)
-      updated.refresh_token = authData.refresh_token
-      save(configPath, updated, callback)
-    })
-    return callback(null, authData)
-  }
-
-  printAuthURL(options)
-  
-  prompt(function (err, code) {
-    if (err)
-      return callback(err)
-    
-    getToken(xtend(options, code), function (err, token) {
-      if (err)
-        return callback(err)
-      save(configPath, token, callback)
-    })
-  })
-}
 
 function refreshGoogleToken (refreshToken, clientId, clientSecret, cb) {
   request.post('https://accounts.google.com/o/oauth2/token', {
@@ -143,6 +153,3 @@ function checkTokenValidity(accessToken, refreshToken, clientId, clientSecret, c
     cb(null, !json.error)
   });
 };
-
-module.exports = auth
-

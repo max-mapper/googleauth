@@ -1,13 +1,17 @@
 #!/usr/bin/env node
 
 var auth = require('./')
+var args = require('minimist')(process.argv.slice(2))
 
 auth({
   configName: 'googleauth',
-  client_id: process.env['GOOGLE_CLIENT'] || process.env[2],
-  client_secret: process.env['GOOGLE_SECRET'] || process.env[3],
-  refresh: true
+  client_id: args.client_id || process.env['GOOGLEAUTH_CLIENT'],
+  client_secret: args.client_secret || process.env['GOOGLEAUTH_SECRET'],
+  refresh: true,
+  scope: args.scope,
+  redirect_uri: args.redirect_uri,
+  config_path: args.config_path
 }, function (err, authData) {
   if (err) return console.error(err)
-  console.log(authData)
+  console.log(JSON.stringify(authData))
 })
