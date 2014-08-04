@@ -13,9 +13,6 @@ function auth (options, callback) {
   var defaultPath = path.join(process.env.HOME || process.env.USERPROFILE, '.config', options.configName + '.json')
   var configPath = options.config_path || defaultPath
   var authData
-    
-  if (!options.client_id) return callback(new Error('client_id option is missing'))
-  if (!options.scope) return callback(new Error('scope is missing'))
   
   options.redirect_uri = options.redirect_uri || "urn:ietf:wg:oauth:2.0:oob"
   
@@ -36,6 +33,9 @@ function auth (options, callback) {
     })
     return callback(null, authData)
   }
+  
+  if (!options.client_id) return callback(new Error('client_id option is missing'))
+  if (!options.scope) return callback(new Error('scope is missing'))
 
   printAuthURL(options)
   

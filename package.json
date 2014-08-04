@@ -1,6 +1,6 @@
 {
   "name": "googleauth",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Create and load persistent Google OAuth API authentication tokens on the command-line",
   "bin": "cli.js",
   "repository": {
