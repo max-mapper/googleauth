@@ -8,6 +8,15 @@ This module is based on [ghauth](https://github.com/rvagg/ghauth) which does the
 
 You can learn about Google tokens here https://developers.google.com/accounts/docs/OAuth2WebServer
 
+To use this you will need to:
+
+- have a google account
+- create a new application at the [google developers console](https://console.developers.google.com/project)
+- enable an API on your new application (e.g. the gmail API)
+- create a new client ID for an "Installed application"
+- store the client ID and client secret in a secure location (you will need them to use `googleauth`)
+- for the API you want to access locate the scope URL. e.g. gmail's scope url for read-only is: `https://www.googleapis.com/auth/gmail.readonly`
+
 ## Example usage
 
 ```
