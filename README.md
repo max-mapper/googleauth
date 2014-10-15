@@ -15,6 +15,7 @@ To use this you will need to:
 - enable an API on your new application (e.g. the gmail API)
 - create a new client ID for an "Installed application"
 - store the client ID and client secret in a secure location (you will need them to use `googleauth`)
+- add your email and product name to the "Consent screen" page under the APIs & auth section of your application
 - for the API you want to access locate the scope URL. e.g. gmail's scope url for read-only is: `https://www.googleapis.com/auth/gmail.readonly`
 
 ## Example usage
