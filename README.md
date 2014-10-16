@@ -40,10 +40,10 @@ $ googleauth
 
 ## Resetting your token
 
-A JSON file will be created when you first get a token at this location:
+A JSON file will be created when you first get a token at the XDG config directory or this location:
 
-```js
-path.join(process.env.HOME || process.env.USERPROFILE, '.config', 'googleauth.json')
+```
+~/.config/googleauth.json
 ```
 
 You can simply delete that file to make `googleauth` forget about you.
