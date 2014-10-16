@@ -6,11 +6,12 @@ var read = require('read')
 var mkdirp = require('mkdirp')
 var xtend = require('xtend')
 var request = require('request')
+var xdgBasedir = require('xdg-basedir')
 
 module.exports = auth
 
 function auth (options, callback) {
-  var defaultPath = path.join(process.env.HOME || process.env.USERPROFILE, '.config', options.configName + '.json')
+  var defaultPath = path.join(xdgBasedir.config, options.configName + '.json')
   var configPath = options.config_path || defaultPath
   var authData
   
